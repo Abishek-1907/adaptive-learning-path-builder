@@ -1,0 +1,144 @@
+<div
+  #canvasEl
+  class="canvas-container"
+  [class.connecting]="!!connectingFromId"
+  [class.drag-active]="dragActive"
+  (mousedown)="onCanvasMouseDown($event)"
+  (mousemove)="onMouseMove($event)"
+  (mouseup)="onMouseUp()"
+  (mouseleave)="onMouseLeave()"
+  (wheel)="onWheel($event)"
+>
+  <!-- rest of template unchanged, just remove the drop-zone div -->
+
+  <!-- Zoom Controls -->
+  <div class="zoom-controls">
+    <button (click)="zoomIn()"><span class="material-icons">add</span></button>
+    <span class="zoom-label">{{ zoomPercent }}</span>
+    <button (click)="zoomOut()"><span class="material-icons">remove</span></button>
+    <button (click)="resetView()"><span class="material-icons">fit_screen</span></button>
+  </div>
+
+  <!-- Canvas hint -->
+  @if (nodes.length <= 2) {
+    <div class="canvas-hint">
+      <span class="material-icons">drag_indicator</span>
+      <p>Drag components from the left panel onto the canvas</p>
+    </div>
+  }
+
+  <!-- Transformed viewport -->
+  <div class="viewport" [style.transform]="transform">
+
+    <!-- SVG Edges layer -->
+    <svg
+      class="edges-svg"
+      width="4000"
+      height="4000"
+      style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none"
+    >
+      <defs>
+        <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#4f8ef7"/>
+        </marker>
+        <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#34d399"/>
+        </marker>
+        <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#8b6cf7"/>
+        </marker>
+        <marker id="arr-gray" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#334070"/>
+        </marker>
+      </defs>
+
+      <!-- Connecting preview line -->
+      @if (connectingFromId) {
+        <path
+          [attr.d]="getConnectingLine()"
+          stroke="#4f8ef7"
+          stroke-width="2"
+          stroke-dasharray="6,4"
+          fill="none"
+          opacity="0.7"
+        />
+      }
+
+      <!-- Rendered edges -->
+      @for (edge of computedEdges; track edge.id) {
+        <!-- Hit area -->
+        <path
+          [attr.d]="edge.path"
+          stroke="transparent"
+          stroke-width="14"
+          fill="none"
+          style="cursor:pointer;pointer-events:stroke"
+          (click)="onEdgeClick($event, edge)"
+        />
+        <!-- Visible line -->
+        <path
+          [attr.d]="edge.path"
+          [attr.stroke]="getEdgeColor(edge)"
+          [attr.stroke-width]="edge.selected ? 2.5 : 1.5"
+          fill="none"
+          [attr.marker-end]="edge.selected ? 'url(#arr-blue)' : edge.isDefault ? 'url(#arr-green)' : hasRules(edge) ? 'url(#arr-purple)' : 'url(#arr-gray)'"
+          style="pointer-events:none"
+        />
+        <!-- Edge label -->
+        @if (getEdgeLabelText(edge)) {
+          <text
+            [attr.x]="edge.midX"
+            [attr.y]="(edge.midY ?? 0) - 6"
+            text-anchor="middle"
+            fill="#8892b0"
+            font-size="11"
+            font-family="DM Sans, sans-serif"
+            style="pointer-events:none"
+          >{{ getEdgeLabelText(edge) }}</text>
+        }
+      }
+    </svg>
+
+    <!-- Nodes -->
+    @for (node of nodes; track node.id) {
+      <div
+        [class]="getNodeClass(node)"
+        [style.left.px]="node.position.x"
+        [style.top.px]="node.position.y"
+        (mousedown)="onNodeMouseDown($event, node)"
+      >
+        <div class="node-header">
+          <div class="node-icon">
+            <span class="material-icons">{{ getNodeIcon(node.type) }}</span>
+          </div>
+          <div class="node-info">
+            <div class="node-label">{{ node.label }}</div>
+            @if (node.config?.approximateDurationMinutes) {
+              <div class="node-duration">
+                <span class="material-icons" style="font-size:11px">schedule</span>
+                {{ node.config!.approximateDurationMinutes }} min
+              </div>
+            }
+          </div>
+          @if (node.type !== 'start' && node.type !== 'end') {
+            <span class="badge" [class]="node.type">{{ node.type }}</span>
+          }
+        </div>
+
+        @if (node.type !== 'start' && node.type !== 'end' && node.description) {
+          <div class="node-desc">{{ node.description }}</div>
+        }
+
+        @if (mode === 'builder' && node.type !== 'end') {
+          <button
+            class="connect-btn"
+            (mousedown)="onConnectStart($event, node.id)"
+            title="Draw connection"
+          >
+            <span class="material-icons">add_circle</span>
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>

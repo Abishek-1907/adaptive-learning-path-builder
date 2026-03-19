@@ -1,0 +1,67 @@
+<header class="toolbar">
+  <div class="toolbar-left">
+    <div class="logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">PathBuilder</span>
+    </div>
+    <div class="path-name">
+      <input
+        [value]="pathName"
+        (input)="nameChange.emit($any($event.target).value)"
+        placeholder="Untitled Learning Path"
+        class="name-input"
+      />
+      <span class="badge" [class]="pathStatus">{{ pathStatus }}</span>
+    </div>
+  </div>
+
+  <div class="toolbar-center">
+    <div class="mode-toggle">
+      <button [class.active]="mode === 'builder'" (click)="modeChange.emit('builder')">
+        <span class="material-icons" style="font-size:16px">tune</span>
+        Builder
+      </button>
+      <button [class.active]="mode === 'preview'" (click)="modeChange.emit('preview')">
+        <span class="material-icons" style="font-size:16px">visibility</span>
+        Preview
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar-right">
+    <div class="saved-paths-wrapper">
+      <button class="btn-icon" (click)="togglePaths()" title="Load saved paths">
+        <span class="material-icons">folder_open</span>
+      </button>
+      @if (showPaths()) {
+        <div class="paths-dropdown">
+          <div class="paths-header">Saved Paths</div>
+          @for (p of savedPaths(); track p.id) {
+            <div class="path-item" (click)="loadPath.emit(p.id!); showPaths.set(false)">
+              <span class="path-item-name">{{ p.name }}</span>
+              <span class="badge" [class]="p.status">{{ p.status }}</span>
+            </div>
+          } @empty {
+            <div class="paths-empty">No saved paths</div>
+          }
+        </div>
+      }
+    </div>
+
+    <button class="btn-save" [disabled]="saving" (click)="saveDraft.emit()">
+      @if (saving) {
+        <span class="material-icons spinning">sync</span>
+      } @else if (saveSuccess) {
+        <span class="material-icons">check_circle</span>
+      } @else {
+        <span class="material-icons">save</span>
+      }
+      {{ saving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Draft' }}
+    </button>
+
+    <button class="btn-publish" (click)="publish.emit()">
+      <span class="material-icons">rocket_launch</span>
+      Publish
+    </button>
+  </div>
+</header>

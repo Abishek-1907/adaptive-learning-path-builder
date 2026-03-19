@@ -1,0 +1,224 @@
+<aside class="properties-panel">
+  @if (!selectedNode && !selectedEdge) {
+    <div class="empty-panel">
+      <div class="empty-icon">
+        <span class="material-icons">touch_app</span>
+      </div>
+      <h3>Properties</h3>
+      <p>Select a node or connection to view and edit its properties</p>
+    </div>
+  }
+
+  <!-- NODE PROPERTIES -->
+  @if (editNode) {
+    <div class="panel-content">
+      <div class="panel-header">
+        <div class="header-icon" [class]="'type-' + editNode.type">
+          <span class="material-icons">{{ getNodeIcon(editNode.type) }}</span>
+        </div>
+        <div>
+          <div class="header-title">Node Properties</div>
+          <div class="header-sub">
+            <span class="badge" [class]="editNode.type">{{ editNode.type }}</span>
+          </div>
+        </div>
+        @if (canDelete()) {
+          <button class="btn-delete" (click)="deleteNode()" title="Delete node">
+            <span class="material-icons">delete</span>
+          </button>
+        }
+      </div>
+
+      <div class="fields">
+        <div class="field">
+          <label>Label</label>
+          <input [(ngModel)]="editNode.label" (ngModelChange)="saveNode()" placeholder="Node label" />
+        </div>
+
+        <div class="field">
+          <label>Description</label>
+          <textarea [(ngModel)]="editNode.description" (ngModelChange)="saveNode()" rows="3" placeholder="Optional description"></textarea>
+        </div>
+
+        @if (editNode.type !== 'start' && editNode.type !== 'end') {
+          <div class="section-title">Configuration</div>
+
+          <div class="field">
+            <label>Duration (minutes)</label>
+            <input
+              type="number"
+              [ngModel]="editNode.config?.approximateDurationMinutes"
+              (ngModelChange)="updateDuration($event)"
+              min="1"
+            />
+          </div>
+
+          @if (editNode.type === 'assessment') {
+            <div class="field-row">
+              <div class="field">
+                <label>Max Score</label>
+                <input
+                  type="number"
+                  [ngModel]="editNode.config?.assessment?.maxScore"
+                  (ngModelChange)="updateMaxScore($event)"
+                />
+              </div>
+              <div class="field">
+                <label>Passing Score</label>
+                <input
+                  type="number"
+                  [ngModel]="editNode.config?.assessment?.passingScore"
+                  (ngModelChange)="updatePassingScore($event)"
+                />
+              </div>
+            </div>
+          }
+        }
+
+        <div class="field">
+          <label>Node ID</label>
+          <input [value]="editNode.id" readonly class="readonly" />
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- EDGE PROPERTIES -->
+  @if (editEdge) {
+    <div class="panel-content">
+      <div class="panel-header">
+        <div class="header-icon type-edge">
+          <span class="material-icons">account_tree</span>
+        </div>
+        <div>
+          <div class="header-title">Connection</div>
+          <div class="header-sub">Progression logic</div>
+        </div>
+        <button class="btn-delete" (click)="deleteEdge()" title="Delete connection">
+          <span class="material-icons">delete</span>
+        </button>
+      </div>
+
+      <div class="flow-path">
+        <div class="flow-node" [class]="'type-' + getSourceNode()?.type">
+          <span class="material-icons">{{ getNodeIcon(getSourceNode()?.type ?? '') }}</span>
+          <span>{{ getSourceNode()?.label }}</span>
+        </div>
+        <span class="material-icons flow-arrow">arrow_downward</span>
+        <div class="flow-node" [class]="'type-' + getTargetNode()?.type">
+          <span class="material-icons">{{ getNodeIcon(getTargetNode()?.type ?? '') }}</span>
+          <span>{{ getTargetNode()?.label }}</span>
+        </div>
+      </div>
+
+      <div class="fields">
+        <div class="field">
+          <label>Label (optional)</label>
+          <input [(ngModel)]="editEdge.label" (ngModelChange)="saveEdge()" placeholder="e.g. If score >= 70" />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Priority</label>
+            <input type="number" [(ngModel)]="editEdge.priority" (ngModelChange)="saveEdge()" min="1" />
+          </div>
+          <div class="field checkbox-field">
+            <label>Default Path</label>
+            <label class="toggle">
+              <input type="checkbox" [(ngModel)]="editEdge.isDefault" (ngModelChange)="saveEdge()" />
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="section-title">
+          Conditions
+          <div class="condition-operator">
+            <button [class.active]="editEdge.conditions.operator === 'AND'"
+                    (click)="setConditionOperator('AND')">AND</button>
+            <button [class.active]="editEdge.conditions.operator === 'OR'"
+                    (click)="setConditionOperator('OR')">OR</button>
+          </div>
+        </div>
+
+        @for (rule of getRules(); track rule.id) {
+          <div class="rule-card">
+            <div class="rule-header">
+              <span class="rule-num">Rule {{ getRuleIndex(rule) + 1 }}</span>
+              <button class="btn-remove" (click)="removeRule(rule.id)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+
+            <div class="field">
+              <label>Metric</label>
+              <select [ngModel]="rule.metric" (ngModelChange)="onMetricChange(rule, $event)">
+                @for (m of getAvailableMetrics(rule); track m) {
+                  <option [value]="m">{{ m }}</option>
+                }
+              </select>
+            </div>
+
+            @if (!isRangeMetric(rule.metric)) {
+              <div class="field-row">
+                <div class="field">
+                  <label>Operator</label>
+                  <select
+                    [ngModel]="rule.operator"
+                    (ngModelChange)="updateRuleOperator(rule, $event)"
+                    [disabled]="isBooleanMetric(rule.metric)"
+                  >
+                    @for (op of getOperatorsForMetric(rule.metric); track op) {
+                      <option [value]="op">{{ op }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Value</label>
+                  @if (isBooleanMetric(rule.metric)) {
+                    <select [ngModel]="rule.value" (ngModelChange)="updateRuleValue(rule, $event)">
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  } @else {
+                    <input
+                      type="number"
+                      [ngModel]="rule.value"
+                      (ngModelChange)="updateRuleValue(rule, $event)"
+                    />
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="field-row">
+                <div class="field">
+                  <label>Min</label>
+                  <input
+                    type="number"
+                    [ngModel]="getRangeMin(rule)"
+                    (ngModelChange)="updateRangeMin(rule, $event)"
+                  />
+                </div>
+                <div class="field">
+                  <label>Max</label>
+                  <input
+                    type="number"
+                    [ngModel]="getRangeMax(rule)"
+                    (ngModelChange)="updateRangeMax(rule, $event)"
+                  />
+                </div>
+              </div>
+            }
+
+            <div class="rule-preview">{{ getRuleDescription(rule) }}</div>
+          </div>
+        }
+
+        <button class="btn-add-rule" (click)="addRule()">
+          <span class="material-icons">add</span>
+          Add Condition Rule
+        </button>
+      </div>
+    </div>
+  }
+</aside>

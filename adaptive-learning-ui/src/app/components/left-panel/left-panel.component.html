@@ -1,0 +1,79 @@
+<aside class="left-panel">
+  <div class="panel-header">
+    <h2 class="panel-title">Add Components</h2>
+    <p class="panel-subtitle">Drag or click to add to canvas</p>
+  </div>
+
+  <div class="search-box">
+    <span class="material-icons search-icon">search</span>
+    <input
+      type="text"
+      placeholder="Search components..."
+      [value]="search()"
+      (input)="onSearch($any($event.target).value)"
+    />
+  </div>
+
+  <div class="filter-tabs">
+    <button [class.active]="filter() === 'all'" (click)="setFilter('all')">All</button>
+    <button [class.active]="filter() === 'unit'" (click)="setFilter('unit')">
+      <span class="material-icons" style="font-size:13px">menu_book</span>Units
+    </button>
+    <button [class.active]="filter() === 'assessment'" (click)="setFilter('assessment')">
+      <span class="material-icons" style="font-size:13px">assignment</span>Assessments
+    </button>
+  </div>
+
+  <div class="components-list">
+    @if (loading()) {
+      @for (i of [1,2,3,4]; track i) {
+        <div class="component-skeleton"></div>
+      }
+    } @else {
+      @for (comp of filtered(); track comp.id) {
+        <div
+          class="component-card"
+          [class]="comp.type"
+          draggable="true"
+          (dragstart)="onDragStart($event, comp)"
+        >
+          <div class="card-icon">
+            <span class="material-icons">{{ getIcon(comp.type) }}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-title">{{ comp.title }}</div>
+            <div class="card-desc">{{ comp.shortDescription }}</div>
+            <div class="card-meta">
+              <span class="badge" [class]="comp.type">{{ comp.type }}</span>
+              <span class="duration">
+                <span class="material-icons" style="font-size:12px">schedule</span>
+                {{ getDuration(comp.approximateDurationMinutes) }}
+              </span>
+            </div>
+          </div>
+          <div class="drag-handle">
+            <span class="material-icons">drag_indicator</span>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <span class="material-icons">search_off</span>
+          <p>No components found</p>
+        </div>
+      }
+    }
+  </div>
+
+  <div class="how-it-works">
+    <div class="hiw-header">
+      <span class="material-icons" style="font-size:16px">info</span>
+      How it works
+    </div>
+    <ul>
+      <li>Drag components onto the canvas</li>
+      <li>Connect nodes to build a flow</li>
+      <li>Click connections to set conditions</li>
+      <li>Save draft or publish when ready</li>
+    </ul>
+  </div>
+</aside>

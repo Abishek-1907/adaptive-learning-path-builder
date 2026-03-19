@@ -1,0 +1,41 @@
+<div class="app-shell">
+  <app-toolbar
+    [pathName]="pathName()"
+    [pathStatus]="pathStatus()"
+    [saving]="saving()"
+    [saveSuccess]="saveSuccess()"
+    [mode]="mode()"
+    (nameChange)="pathName.set($event)"
+    (saveDraft)="onSaveDraft()"
+    (publish)="onPublish()"
+    (modeChange)="setMode($event)"
+  />
+
+  <div class="workspace">
+    <app-left-panel
+      (componentDropped)="onComponentDropped($event)"
+    />
+
+    <app-canvas
+      [nodes]="nodes()"
+      [edges]="edges()"
+      [mode]="mode()"
+      (nodeSelected)="onNodeSelected($event)"
+      (edgeSelected)="onEdgeSelected($event)"
+      (edgeCreated)="onEdgeCreated($event)"
+      (nodeMoved)="onNodeMoved($event)"
+      (componentDropped)="onComponentDropped($event)"
+      (deselect)="onDeselect()"
+    />
+
+    <app-properties-panel
+      [selectedNode]="selectedNode()"
+      [selectedEdge]="selectedEdge()"
+      [allNodes]="nodes()"
+      (nodeUpdated)="onNodeUpdated($event)"
+      (edgeUpdated)="onEdgeUpdated($event)"
+      (nodeDeleted)="onNodeDeleted($event)"
+      (edgeDeleted)="onEdgeDeleted($event)"
+    />
+  </div>
+</div>
